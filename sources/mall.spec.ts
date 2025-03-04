@@ -1,7 +1,7 @@
 import { toNano } from "@ton/core";
 import { Blockchain } from "@ton/sandbox";
 import "@ton/test-utils";
-import { SampleTactContract } from "./output/sample_SampleTactContract";
+import { Mall } from "./output/mall_Mall";
 import { findErrorCodeByMessage } from './utils/error';
 
 describe("contract", () => {
@@ -10,7 +10,7 @@ describe("contract", () => {
         let system = await Blockchain.create();
         let owner = await system.treasury("owner");
         let nonOwner = await system.treasury("non-owner");
-        let contract = system.openContract(await SampleTactContract.fromInit(owner.address));
+        let contract = system.openContract(await Mall.fromInit(owner.address));
         const deployResult = await contract.send(owner.getSender(), { value: toNano(1) }, { $$type: "Deploy", queryId: 0n });
         expect(deployResult.transactions).toHaveTransaction({
             from: owner.address,
@@ -37,5 +37,12 @@ describe("contract", () => {
             success: false,
             exitCode: errorCodeForInvalidSender!!
         });
+
+        var num = await contract.getOverflow();
+        console.log("getOverflow:", num);
+
+
+        var random = await contract.getRandom(1000n);
+        console.log("random1:", random);
     });
 });

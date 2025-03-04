@@ -1,18 +1,34 @@
 {
-    "projects": [{
-        "name": "sample",
-        "path": "./sources/contract.tact",
-        "output": "./sources/output",
-        "mode": "full",
-        "options": {
-            "external": false,
-            "debug": false,
-            "ipfsAbiGetter": false,
-            "interfacesGetter": false,
-            "experimental": {
-                "inline": false
+    "projects": [
+        {
+            "name": "tsm",
+            "path": "./sources/tsm.tact",
+            "output": "./sources/output",
+            "mode": "full",
+            "options": {
+                "external": false,
+                "debug": false,
+                "ipfsAbiGetter": false,
+                "interfacesGetter": false,
+                "experimental": {
+                    "inline": false
+                }
+            }
+        },
+        {
+            "name": "mall",
+            "path": "./sources/mall.tact",
+            "output": "./sources/output",
+            "mode": "full",
+            "options": {
+                "external": false,
+                "debug": false,
+                "ipfsAbiGetter": false,
+                "interfacesGetter": false,
+                "experimental": {
+                    "inline": false
+                }
             }
         }
-    }]
+    ]
 }
-
