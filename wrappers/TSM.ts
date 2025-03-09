@@ -1,3 +1,4 @@
+export * from '../build/TSM/tact_TSM';
 import { Sha256 } from "@aws-crypto/sha256-js";
 import { Dictionary, beginCell, Cell } from "@ton/core";
 
@@ -53,3 +54,4 @@ function bufferToChunks(buff: Buffer, chunkSize: number) {
     }
     return chunks;
 }
+

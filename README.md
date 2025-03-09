@@ -1,56 +1,26 @@
-# Tact template project
+# HuntMall
 
-This template comes pre-configured to kickstart your new Tact project. It includes the Tact compiler, TypeScript, Jest integrated with [Sandbox](https://github.com/ton-org/sandbox), and a sample demonstrating how to run tests.
+## Project structure
+
+-   `contracts` - source code of all the smart contracts of the project and their dependencies.
+-   `wrappers` - wrapper classes (implementing `Contract` from ton-core) for the contracts, including any [de]serialization primitives and compilation functions.
+-   `tests` - tests for the contracts.
+-   `scripts` - scripts used by the project, mainly the deployment scripts.
 
 ## How to use
 
-First, let's install all the dependencies:
+### Build
 
-```shell
-yarn install
-```
+`npx blueprint build` or `yarn blueprint build`
 
-Now we're ready to build our contract:
+### Test
 
-```shell
-yarn build
-```
+`npx blueprint test` or `yarn blueprint test`
 
-Once you've built our contract, you can deploy it:
+### Deploy or run another script
 
-```shell
-yarn deploy
-```
+`npx blueprint run` or `yarn blueprint run`
 
-Let's look at some other useful commands.
+### Add a new contract
 
-To test your contract after changes, run:
-
-```shell
-yarn test
-```
-
-If you want to quickly check your changes for validity, run:
-
-```shell
-yarn lint
-```
-
-## Deployment
-
-To deploy a contract, follow these steps:
-
-1. Define the [`contract.tact`](./sources/contract.tact) file that will be used as entry point of your contract.
-2. Customize the [`contract.deploy.ts`](./sources/contract.deploy.ts) file based on your `contract.tact` to generate a deployment link. It is crucial to ensure the proper invocation of the `init()` function within the contract.
-
-If you rename `contract.tact`, be sure to update [`tact.config.json`](./tact.config.json) accordingly. For a description of `tact.config.json`, see the [Configuration page in the Tact documentation](https://docs.tact-lang.org/book/config).
-
-## Testing
-
-You can find some examples of contract tests in [`contract.spec.ts`](./sources/contract.spec.ts). For more information about testing, see the [Debugging and testing page in the Tact Documentation](https://docs.tact-lang.org/book/debug).
-
-To add new test files to your contracts, create `*.spec.ts` files similar to the template's one. They will be automatically picked up by the testing commands, such as `yarn test`.
-
-## License
-
-[MIT](./LICENSE)
+`npx blueprint create ContractName` or `yarn blueprint create ContractName`
