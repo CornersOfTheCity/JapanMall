@@ -4,7 +4,7 @@
     "scripts": {
         "start": "blueprint run",
         "build": "blueprint build",
-        "test": "jest --verbose"
+        "test": "jest --verbose --detectOpenHandles"
     },
     "devDependencies": {
         "@swc/core": "^1.2.177",

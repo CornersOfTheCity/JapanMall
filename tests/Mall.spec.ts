@@ -3,15 +3,15 @@ import { Blockchain, SandboxContract, TreasuryContract, internal, BlockchainSnap
 import { Cell, toNano, beginCell, Address } from '@ton/core';
 import { JettonDefaultWallet } from '../wrappers/Jetton';
 import { TSM, Mint, buildOnchainMetadata, TokenTransfer } from '../wrappers/TSM';
-import { Mall, Create, Buy, OwnerClaim, UserClaim, LotteryDraw, ChangeAddress } from '../wrappers/Mall';
+import { Mall, Create, Buy, OwnerClaim, UserClaim, LotteryDraw, SetWalletAddress, WinnerClaim, WinnerAbondon } from '../wrappers/Mall';
 import '@ton/test-utils';
 
 
 describe('Mall', () => {
     const jettonParams = {
-        name: "Best Practice",
+        name: "TSM",
         description: "This is description of Test tact jetton",
-        symbol: "XXXE",
+        symbol: "TSM",
         image: "https://play-lh.googleusercontent.com/ahJtMe0vfOlAu1XJVQ6rcaGrQBgtrEZQefHy7SXB7jpijKhu1Kkox90XDuH8RmcBOXNn",
     };
 
@@ -78,7 +78,7 @@ describe('Mall', () => {
         playerThreeJettonWallet = blockchain.openContract(await JettonDefaultWallet.fromAddress(playerThreeWallet));
 
         let walletCode = (await tsm.getGetJettonData()).wallet_code;
-        mall = blockchain.openContract(await Mall.fromInit(deployer.address, tsm.address, walletCode));
+        mall = blockchain.openContract(await Mall.fromInit(deployer.address, tsm.address));
         const mallDeployResult = await mall.send(deployer.getSender(), { value: toNano("1") }, { $$type: "Deploy", queryId: 0n });
         expect(mallDeployResult.transactions).toHaveTransaction({
             from: deployer.address,
@@ -90,11 +90,9 @@ describe('Mall', () => {
         const mallWallet = await tsm.getGetWalletAddress(mall.address);
         mallJettonWallet = blockchain.openContract(await JettonDefaultWallet.fromAddress(mallWallet));
 
-        console.log("mallWalletAddress:", await tsm.getGetWalletAddress(mall.address));
-
         //set mallWallet address
-        const ChangeAddress: ChangeAddress = {
-            $$type: "ChangeAddress",
+        const ChangeAddress: SetWalletAddress = {
+            $$type: "SetWalletAddress",
             walletAddress: mallJettonWallet.address,
         };
         const changeResult = await mall.send(deployer.getSender(), { value: toNano("1") }, ChangeAddress);
@@ -172,7 +170,7 @@ describe('Mall', () => {
             amount: BigInt(100)
         };
 
-        const ownerCreateResult = await mall.send(deployer.getSender(), { value: toNano("1") }, Create);
+        const ownerCreateResult = await mall.send(deployer.getSender(), { value: toNano("0.05") }, Create);
         expect(ownerCreateResult.transactions).toHaveTransaction({
             from: deployer.address,
             to: mall.address,
@@ -192,11 +190,11 @@ describe('Mall', () => {
             destination: mall.address,
             response_destination: mall.address,
             custom_payload: null,
-            forward_ton_amount: toNano(0.5),
-            forward_payload: beginCell().storeUint(1, 8).storeUint(1, 256).endCell().asSlice(),
+            forward_ton_amount: toNano(0.1),
+            forward_payload: beginCell().storeUint(1, 256).endCell().asSlice(),
         };
 
-        const transferResult = await playerOneJettonWallet.send(playerOne.getSender(), { value: toNano("1") }, msg);
+        const transferResult = await playerOneJettonWallet.send(playerOne.getSender(), { value: toNano("0.15") }, msg);
         expect(transferResult.transactions).toHaveTransaction({
             from: playerOneJettonWallet.address,
             to: mallJettonWallet.address,
@@ -226,14 +224,15 @@ describe('Mall', () => {
         console.log("before mallBalance:", beforeMallbalance);
 
         let hunt = await mall.getHuntsMap(BigInt(1));
-        // hunt.userBuy(playerOne);
+
+        console.log("hunt:", hunt);
 
         const userClaim: UserClaim = {
             $$type: "UserClaim",
             huntId: BigInt(1)
         };
 
-        const userClaimResult = await mall.send(playerOne.getSender(), { value: toNano("1") }, userClaim);
+        const userClaimResult = await mall.send(playerOne.getSender(), { value: toNano("0.1") }, userClaim);
         expect(userClaimResult.transactions).toHaveTransaction({
             from: playerOne.address,
             to: mall.address,
@@ -261,7 +260,7 @@ describe('Mall', () => {
             amount: BigInt(50)
         };
 
-        const ownerCreateResult = await mall.send(deployer.getSender(), { value: toNano("1") }, Create);
+        const ownerCreateResult = await mall.send(deployer.getSender(), { value: toNano("0.05") }, Create);
         expect(ownerCreateResult.transactions).toHaveTransaction({
             from: deployer.address,
             to: mall.address,
@@ -276,11 +275,11 @@ describe('Mall', () => {
             destination: mall.address,
             response_destination: mall.address,
             custom_payload: null,
-            forward_ton_amount: toNano(0.5),
-            forward_payload: beginCell().storeUint(1, 8).storeUint(2, 256).endCell().asSlice(),
+            forward_ton_amount: toNano(0.1),
+            forward_payload: beginCell().storeUint(2, 256).endCell().asSlice(),
         };
 
-        const ownerBuyResult = await ownerJettonWallet.send(deployer.getSender(), { value: toNano("1") }, ownerBuyMsg);
+        const ownerBuyResult = await ownerJettonWallet.send(deployer.getSender(), { value: toNano("0.15") }, ownerBuyMsg);
         expect(ownerBuyResult.transactions).toHaveTransaction({
             from: ownerJettonWallet.address,
             to: mallJettonWallet.address,
@@ -297,11 +296,11 @@ describe('Mall', () => {
             destination: mall.address,
             response_destination: mall.address,
             custom_payload: null,
-            forward_ton_amount: toNano(0.5),
-            forward_payload: beginCell().storeUint(1, 8).storeUint(2, 256).endCell().asSlice(),
+            forward_ton_amount: toNano(0.1),
+            forward_payload: beginCell().storeUint(2, 256).endCell().asSlice(),
         };
 
-        const buyerOneResult = await playerOneJettonWallet.send(playerOne.getSender(), { value: toNano("1") }, buyerOneMsg);
+        const buyerOneResult = await playerOneJettonWallet.send(playerOne.getSender(), { value: toNano("0.15") }, buyerOneMsg);
         expect(buyerOneResult.transactions).toHaveTransaction({
             from: playerOneJettonWallet.address,
             to: mallJettonWallet.address,
@@ -317,11 +316,11 @@ describe('Mall', () => {
             destination: mall.address,
             response_destination: mall.address,
             custom_payload: null,
-            forward_ton_amount: toNano(0.5),
-            forward_payload: beginCell().storeUint(1, 8).storeUint(2, 256).endCell().asSlice(),
+            forward_ton_amount: toNano(0.1),
+            forward_payload: beginCell().storeUint(2, 256).endCell().asSlice(),
         };
 
-        const buyerTwoResult = await playerTwoJettonWallet.send(playerTwo.getSender(), { value: toNano("1") }, buyerTwoMsg);
+        const buyerTwoResult = await playerTwoJettonWallet.send(playerTwo.getSender(), { value: toNano("0.15") }, buyerTwoMsg);
         expect(buyerTwoResult.transactions).toHaveTransaction({
             from: playerTwoJettonWallet.address,
             to: mallJettonWallet.address,
@@ -335,7 +334,7 @@ describe('Mall', () => {
             $$type: "LotteryDraw",
             huntId: BigInt(2)
         };
-        const lotteryDrawResult = await mall.send(deployer.getSender(), { value: toNano("1") }, lotteryDraw);
+        const lotteryDrawResult = await mall.send(deployer.getSender(), { value: toNano("0.1") }, lotteryDraw);
         expect(lotteryDrawResult.transactions).toHaveTransaction({
             from: deployer.address,
             to: mall.address,
@@ -344,9 +343,6 @@ describe('Mall', () => {
 
         let huntWin = await mall.getHuntWinMap(BigInt(2));
         console.log(huntWin);
-
-        let winner = await mall.getWinnersMap(huntWin.winner);
-        console.log(winner);
     })
 
     it('Test: Winner should claim successfully', async () => {
@@ -356,6 +352,7 @@ describe('Mall', () => {
 
         let huntWin = await mall.getHuntWinMap(BigInt(2));
         let winner = playerThree;
+        let winAmount = huntWin.award;
         let winnerJettonWallet = playerThreeJettonWallet;
         switch (huntWin.winner.toString()) {
             case deployer.address.toString():
@@ -373,13 +370,15 @@ describe('Mall', () => {
             default:
                 break;
         }
-        let winAmount = await mall.getWinnersMap(huntWin.winner);
         var winnerWallet = await winnerJettonWallet.getGetWalletData();
         var beforeWinner = await winnerWallet.balance;
         console.log("beforeWinner Balance:", beforeWinner);
 
-
-        const winnerClaimResult = await mall.send(winner.getSender(), { value: toNano("1") }, "WinnerClaim");
+        const winnerClaim: WinnerClaim = {
+            $$type: "WinnerClaim",
+            huntId: BigInt(2)
+        };
+        const winnerClaimResult = await mall.send(winner.getSender(), { value: toNano("0.05") }, winnerClaim);
         expect(winnerClaimResult.transactions).toHaveTransaction({
             from: winner.address,
             to: mall.address,
@@ -394,8 +393,8 @@ describe('Mall', () => {
         var aftereWinner = await winnerWallet.balance;
         console.log("aftereWinner Balance:", aftereWinner);
 
-        expect(afterMallbalance).toEqual(beforeMallbalance - winAmount);
-        expect(aftereWinner).toEqual(beforeWinner + winAmount);
+        expect(afterMallbalance).toEqual(beforeMallbalance - winAmount * 80n /100n);
+        expect(aftereWinner).toEqual(beforeWinner + winAmount * 80n /100n);
 
     })
 
@@ -452,7 +451,7 @@ describe('Mall', () => {
             toAddress: deployer.address
         };
 
-        const ownerClaimResult = await mall.send(deployer.getSender(), { value: toNano("1") }, ownerClaim);
+        const ownerClaimResult = await mall.send(deployer.getSender(), { value: toNano("0.05") }, ownerClaim);
         expect(ownerClaimResult.transactions).toHaveTransaction({
             from: deployer.address,
             to: mall.address,
