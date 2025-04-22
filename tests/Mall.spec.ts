@@ -3,7 +3,7 @@ import { Blockchain, SandboxContract, TreasuryContract, internal, BlockchainSnap
 import { Cell, toNano, beginCell, Address } from '@ton/core';
 import { JettonDefaultWallet } from '../wrappers/Jetton';
 import { TSM, Mint, buildOnchainMetadata, TokenTransfer } from '../wrappers/TSM';
-import { Mall, Create, Buy, OwnerClaim, UserClaim, LotteryDraw, SetWalletAddress, WinnerClaim, WinnerAbondon } from '../wrappers/Mall';
+import { Mall, Create, OwnerClaim, UserClaim, LotteryDraw, SetWalletAddress, WinnerClaim, WinnerAbondon } from '../wrappers/Mall';
 import '@ton/test-utils';
 
 
@@ -225,7 +225,7 @@ describe('Mall', () => {
 
         let hunt = await mall.getHuntsMap(BigInt(1));
 
-        console.log("hunt:", hunt);
+        console.log("hunt = 1:", hunt);
 
         const userClaim: UserClaim = {
             $$type: "UserClaim",
@@ -448,7 +448,7 @@ describe('Mall', () => {
         const ownerClaim: OwnerClaim = {
             $$type: "OwnerClaim",
             amount: beforeMallbalance - BigInt(1),
-            toAddress: deployer.address
+            receiver: deployer.address
         };
 
         const ownerClaimResult = await mall.send(deployer.getSender(), { value: toNano("0.05") }, ownerClaim);

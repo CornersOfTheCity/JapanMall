@@ -34,11 +34,6 @@ message CreateHuntEmit {
     selld:Int;
 }
 
-message Buy {
-    huntId: Int;
-    amount: Int;
-}
-
 message BuyEmit {
     huntId: Int;
     userAddr:Address;
@@ -104,7 +99,7 @@ message SetPrecent {
 
 message OwnerClaim {
     amount: Int as coins;     
-    toAddress: Address;       
+    receiver: Address;       
 }
 
 message TransferToken {
@@ -112,17 +107,17 @@ message TransferToken {
     toAddress: Address;       
 }
 
-message(0xf8a7ea5) TokenTransfer {
-    query_id: Int as uint64;
+message(0xf8a7ea5) JettonTransfer {
+    queryId: Int as uint64;
     amount: Int as coins;
     destination: Address;
-    response_destination: Address?;
-    custom_payload: Cell?;
-    forward_ton_amount: Int as coins;
-    forward_payload: Slice as remaining; 
+    responseDestination: Address?;
+    customPayload: Cell? = null;
+    forwardTonAmount: Int as coins;
+    forwardPayload: Slice as remaining;
 }
 
-message(0x7362d09c) TokenNotification {
+message(0x7362d09c) JettonNotification {
     query_id: Int as uint64;
     amount: Int as coins;
     from: Address;
@@ -135,6 +130,7 @@ contract Mall with Deployable {
     number: Int;
     queryCounter:Int;
     seed: Int;
+    jettonTransferGas: Int;
     tokenJettonMaster: Address;
     mallTokenBalance: Int;
     mallWalletAddress:Address;
@@ -151,6 +147,7 @@ contract Mall with Deployable {
         self.huntWinMap = emptyMap();
         self.tokenJettonMaster = jettonMaster;
         self.seed =abs(randomInt());
+        self.jettonTransferGas = ton("0.05");
 
         self.mallWalletAddress = myAddress();
     }
@@ -192,7 +189,8 @@ contract Mall with Deployable {
        let ctx: Context = context();
        let claimer:Address = ctx.sender;
        let hunt:Hunt = self.huntsMap.get(huntId)!!;
-       require(hunt.type == 0 && hunt.endTime<now() && hunt.selld < hunt.amount,"Condition Not Met");
+        //    require(hunt.type == 0 && hunt.endTime<now() && hunt.selld < hunt.amount,"Condition Not Met");
+        require(hunt.type == 0,"Condition Not Met");
 
        let userBuyAmount:Int = hunt.userBuy.get(claimer)!!;
 
@@ -205,25 +203,19 @@ contract Mall with Deployable {
         self.queryCounter += 1;
 
             self.sendJettonTransfer(
-                self.mallWalletAddress,
-                ton("0.05"),
-
-                self.queryCounter,
                 userClaimAmount,
                 claimer,
-                myAddress(),
-                ton("0"),
-                emptySlice()
             );
 
         hunt.selld -= userBuyAmount;
         hunt.userBuy.del(claimer);
 
-        if(hunt.selld != 0){
-            self.huntsMap.set(huntId,hunt);
-        }else{
-            self.huntsMap.del(huntId);
-        }
+        self.huntsMap.set(huntId,hunt);
+        // if(hunt.selld != 0){
+        //     self.huntsMap.set(huntId,hunt);
+        // }else{
+        //     self.huntsMap.del(huntId);
+        // }
         emit(UserClaimBackEmit{huntId:huntId,claimer:ctx.sender,claimAmount:userClaimAmount,timeStamp:now()}.toCell());
     }
 
@@ -236,17 +228,10 @@ contract Mall with Deployable {
         let claimAmount:Int = winnerInfo.award * self.precent / 100;
         
         self.sendJettonTransfer(
-                self.mallWalletAddress,
-                ton("0.05"),
-
-                self.queryCounter,
                 claimAmount,
                 claimer,
-                myAddress(),
-                ton("0"),
-                emptySlice()
             );
-        
+        // self.mallTokenBalance -= claimAmount;
         self.huntWinMap.del(huntId);
         emit(WinnerClaimEmit{huntId:huntId,claimer:claimer,claimAmount:claimAmount,timeStamp:now()}.toCell());
     }
@@ -262,22 +247,16 @@ contract Mall with Deployable {
         emit(WinnerAbondonEmit{huntId:huntId,winner:claimer,abondon:true,timeStamp:now()}.toCell());
     }
 
-    fun ownerClaim(amount:Int,receiver:Address){
+    fun ownerClaim(claimAmount:Int,receiver:Address){
        let ctx: Context = context();
         require(ctx.sender == self.owner, "Only owner can withdraw");
 
-        self.sendJettonTransfer(
-                self.mallWalletAddress,
-                ton("0.05"),
-
-                self.queryCounter,
-                amount,
+       self.sendJettonTransfer(
+                claimAmount,
                 receiver,
-                myAddress(),
-                ton("0"),
-                emptySlice()
             );
-        self.mallTokenBalance -= amount;
+
+        // self.mallTokenBalance -= claimAmount;
     }
 
     fun calculateSeed(seedAddress:Address):Int{
@@ -322,27 +301,34 @@ contract Mall with Deployable {
     }
 
     fun sendJettonTransfer(
-        to: Address,
-        value: Int ,
-    
-        queryId: Int,
-        amount: Int,
-        destination: Address,
-        responseDestination: Address,
-        forwardTonAmount: Int,
-        forwardPayload: Slice,
+        transferAmount: Int,
+        receiver: Address,
     ) {
         send(SendParameters{
-            to: to,
-            value: value,
-            body: TokenTransfer{
-                query_id: queryId,
-                amount: amount,
-                destination: destination,
-                response_destination: responseDestination,
-                custom_payload: null,
-                forward_ton_amount: forwardTonAmount,
-                forward_payload: forwardPayload
+            to: self.mallWalletAddress,
+            value: self.jettonTransferGas,
+            body: JettonTransfer{
+                // To prevent replay attacks
+                queryId: 42,
+                // Jetton amount to transfer
+                amount: transferAmount,
+                // Where to transfer Jettons:
+                // this is an address of the Jetton wallet
+                // owner and not the Jetton wallet itself
+                destination:receiver,
+                // Where to send a confirmation notice of a successful transfer
+                // and the rest of the incoming message value
+                responseDestination: sender(),
+                // Can be used for custom logic of Jettons themselves,
+                // and without such can be set to null
+                customPayload: null,
+                // Amount to transfer with JettonTransferNotification,
+                // which is needed for the execution of custom logic
+                forwardTonAmount: 1, // if its 0, the notification won't be sent!
+                // Compile-time way of expressing:
+                //     beginCell().storeUint(0xF, 4).endCell().beginParse()
+                // For more complicated transfers, adjust accordingly
+                forwardPayload: rawSlice("F")
             }.toCell()
         });
     }
@@ -373,7 +359,7 @@ contract Mall with Deployable {
     }
 
     receive(msg:OwnerClaim){
-        self.ownerClaim(msg.amount,msg.toAddress);
+         self.ownerClaim(msg.amount,msg.receiver);
     }
 
     receive(msg:UserClaim){
@@ -392,7 +378,7 @@ contract Mall with Deployable {
         self.create(msg.type,msg.price,msg.startTime,msg.endTime,msg.amount);
     }
 
-    receive(msg: TokenNotification) {
+    receive(msg: JettonNotification) {
         let ctx: Context = context();
         require(ctx.sender == self.mallWalletAddress,"Wromng Sender");
         if(msg.forward_payload!= emptySlice()){
@@ -402,7 +388,7 @@ contract Mall with Deployable {
             let buyAmount:Int = msg.amount/price;
             require(hunt.amount - hunt.selld >= buyAmount ,"Left Not Enough");
             let startIndex:Int = hunt.selld + 1;
-            let endIndex:Int = hunt.selld + buyAmount + 1;
+            let endIndex:Int = hunt.selld + buyAmount;
             hunt.selld += buyAmount;
 
             self.mallTokenBalance += msg.amount;
@@ -423,6 +409,8 @@ contract Mall with Deployable {
             self.mallTokenBalance += msg.amount;
         }
     }
+
+    receive() { cashback(sender()) } 
 
     get fun huntsMap(number:Int): Hunt {
         return self.huntsMap.get(number)!!;
