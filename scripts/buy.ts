@@ -9,7 +9,7 @@ const TON_AMOUNT = BigInt(TonWeb.utils.toNano('0.15').toString()); // 附带的 
 const FORWARD_TON_AMOUNT = BigInt(TonWeb.utils.toNano('0.1').toString()); // 附带的 TON 数量，转为 bigint
 
 // 初始化 TonWeb
-const tonweb = new TonWeb(new TonWeb.HttpProvider('https://toncenter.com/api/v2/jsonRPC')); // 主网 RPC
+const tonweb = new TonWeb(new TonWeb.HttpProvider('https://testnet.toncenter.com/api/v2/jsonRPC')); // 主网 RPC
 
 async function sendJettonTransaction(
   wallet: any, // 你的钱包实例
@@ -74,8 +74,8 @@ async function main() {
   const keyPair = await TonWebMnemonic.mnemonicToKeyPair(mnemonic); 
   const wallet = tonweb.wallet.create({ publicKey: keyPair.publicKey });
 
-  const jettonWalletAddress = '0QCmnI2-Snzlsq1d2vUkHeohCsNAGoG2Nd3wBZPkGHTv67Ec'; // 你的 Jetton 钱包地址
-  const RECIPIENT_CONTRACT_ADDRESS = 'KQBfwEmgQs-7WpPtKuhQMLQ66bKzz2WIUB_ea_I2VyqUbXG3'; // 接收者地址
+  const jettonWalletAddress = 'kQCo3keh-FK5PrOEi0jTye-y7K0DjYsWr9aw6fwz9zFk-srT'; // 你的 Jetton 钱包地址
+  const RECIPIENT_CONTRACT_ADDRESS = 'kQCLOeFqL88m9Dq8sb5HAKJVlybCBn8vU0GF0-rFArD5ymQa'; // 接收者地址
 
   // 创建 forward_payload
 //   const forwardPayload = createForwardPayload('Hello, this is a Jetton transfer!');

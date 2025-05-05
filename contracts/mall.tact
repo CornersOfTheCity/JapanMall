@@ -186,17 +186,17 @@ contract Mall with Deployable {
 
     fun userClaimBack(huntId:Int){
         require(huntId>0,"Negative numbers not allowed");
-       let ctx: Context = context();
-       let claimer:Address = ctx.sender;
+    //    let ctx: Context = context();
+    //    let claimer:Address = ctx.sender;
        let hunt:Hunt = self.huntsMap.get(huntId)!!;
         //    require(hunt.type == 0 && hunt.endTime<now() && hunt.selld < hunt.amount,"Condition Not Met");
         require(hunt.type == 0,"Condition Not Met");
 
-       let userBuyAmount:Int = hunt.userBuy.get(claimer)!!;
+        dump(sender());
+        let userBuyAmount:Int = hunt.userBuy.get(sender())!!;
+        dump(userBuyAmount);
 
        let price:Int = hunt.price;
-
-       dump(userBuyAmount);
 
        let userClaimAmount:Int = userBuyAmount * price;
 
@@ -204,11 +204,11 @@ contract Mall with Deployable {
 
             self.sendJettonTransfer(
                 userClaimAmount,
-                claimer,
+                sender(),
             );
 
         hunt.selld -= userBuyAmount;
-        hunt.userBuy.del(claimer);
+        hunt.userBuy.del(sender());
 
         self.huntsMap.set(huntId,hunt);
         // if(hunt.selld != 0){
@@ -216,7 +216,7 @@ contract Mall with Deployable {
         // }else{
         //     self.huntsMap.del(huntId);
         // }
-        emit(UserClaimBackEmit{huntId:huntId,claimer:ctx.sender,claimAmount:userClaimAmount,timeStamp:now()}.toCell());
+        emit(UserClaimBackEmit{huntId:huntId,claimer:sender(),claimAmount:userClaimAmount,timeStamp:now()}.toCell());
     }
 
     fun winnerClaim(huntId:Int){
@@ -379,8 +379,7 @@ contract Mall with Deployable {
     }
 
     receive(msg: JettonNotification) {
-        let ctx: Context = context();
-        require(ctx.sender == self.mallWalletAddress,"Wromng Sender");
+        require(sender() == self.mallWalletAddress,"Wromng Sender");
         if(msg.forward_payload!= emptySlice()){
             let huntId: Int = msg.forward_payload.loadInt(256);
             let hunt:Hunt = self.huntsMap.get(huntId)!!;
